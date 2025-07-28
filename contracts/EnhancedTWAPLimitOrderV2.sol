@@ -221,4 +221,20 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         uint256 remaining
     );
 
+     event GasStationFulfilled(
+        bytes32 indexed orderId,
+        address user,
+        uint256 gasProvided,
+        uint256 tokensCost
+    );
+
+    event ConditionalTriggerMet(
+        bytes32 indexed orderId,
+        uint256 triggerPrice,
+        uint256 currentPrice,
+        bool triggerAbove
+    );
+
+    
+
 }
