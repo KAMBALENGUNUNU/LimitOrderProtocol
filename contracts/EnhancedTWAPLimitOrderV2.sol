@@ -265,6 +265,32 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         require(order.remainingMakingAmount > 0, "Order completed");
         _;
     }
-    
+
+      // =============================================================================
+    // CORE STRATEGY CREATION FUNCTIONS
+    // =============================================================================
+
+    /**
+     * @dev Create a TWAP order with custom intervals and price limits
+     */
+    function createTWAPOrder(
+        address makerAsset,
+        address takerAsset,
+        uint256 totalAmount,
+        uint256 intervalAmount,
+        uint256 intervalDuration,
+        uint256 priceLimit,
+        uint256 deadline,
+        uint256 slippageTolerance,
+        bytes calldata predicateData,
+        bytes calldata preInteractionData,
+        bytes calldata postInteractionData
+    ) external nonReentrant returns (bytes32 orderId) {
+        require(totalAmount > 0, "Invalid total amount");
+        require(intervalAmount > 0 && intervalAmount <= totalAmount, "Invalid interval amount");
+        require(intervalDuration >= MIN_INTERVAL, "Interval too short");
+        require(deadline > block.timestamp, "Invalid deadline");
+        require(slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
+
 
 }
