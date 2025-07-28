@@ -419,3 +419,48 @@ describe("EnhancedTWAPLimitOrderV2", function () {
       expect(order.order.remainingMakingAmount).to.equal(0);
     });
   });
+   describe("1inch LOP Integration", function () {
+    it("should return correct TWAP making and taking amounts", async function () {
+      const totalAmount = ethers.parseEther("10");
+      const intervalAmount = ethers.parseEther("2");
+      const intervalDuration = MIN_INTERVAL;
+      const priceLimit = ethers.parseEther("1");
+      const deadline = (await time.latest()) + 86400;
+      const slippageTolerance = 500;
+
+      const tx = await contract.connect(user).createTWAPOrder(
+        WETH,
+        DAI,
+        totalAmount,
+        intervalAmount,
+        intervalDuration,
+        priceLimit,
+        deadline,
+        slippageTolerance,
+        "0x",
+        "0x",
+        "0x"
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      // Check making amount before interval
+      let makingAmount = await contract.getTWAPMakingAmount(orderId);
+      expect(makingAmount).to.equal(0);
+
+      // Advance time
+      await time.increase(intervalDuration + 1);
+
+      // Check making amount after interval
+      makingAmount = await contract.getTWAPMakingAmount(orderId);
+      expect(makingAmount).to.equal(intervalAmount);
+
+      // Check taking amount (mock price = 1:1 for simplicity)
+      const takingAmount = await contract.getTWAPTakingAmount(orderId);
+      expect(takingAmount).to.equal((intervalAmount * (10000 - slippageTolerance)) / 10000);
+    });
+  });
+});
