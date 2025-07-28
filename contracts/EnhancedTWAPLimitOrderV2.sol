@@ -195,7 +195,16 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         address takerAsset,
         uint256 totalAmount
     );
+
     
+    event OrderExecuted(
+        bytes32 indexed orderId,
+        uint256 executionIndex,
+        uint256 amountIn,
+        uint256 amountOut,
+        uint256 executionPrice,
+        address executor
+    );
 
 
 }
