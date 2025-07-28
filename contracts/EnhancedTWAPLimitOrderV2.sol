@@ -164,6 +164,24 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     mapping(bytes32 => ConditionalParams) public conditionalParams;
     mapping(bytes32 => uint256[]) public executionHistory;
     mapping(bytes32 => uint256[]) public priceHistory;
+   
+    // Grid trading state
+    mapping(bytes32 => mapping(uint256 => bool)) public gridLevelExecuted;
+    mapping(bytes32 => uint256) public currentGridLevel;
+    
+    // Vesting state
+    mapping(bytes32 => uint256) public vestedAmount;
+    mapping(bytes32 => uint256) public claimedAmount;
+    
+    // Protocol management
+    mapping(address => bool) public authorizedExecutors;
+    mapping(address => bool) public authorizedOracles;
+    uint256 public protocolFee = 10; // 0.1%
+    uint256 public executorReward = 5; // 0.05%
+    
+    // Oracle integration
+    address public priceOracle;
+    address public chainlinkRegistry;
 
 
 }
