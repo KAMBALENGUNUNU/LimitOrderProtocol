@@ -1001,5 +1001,58 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     }
 
 
+    /**
+     * @dev Create a conditional order that depends on another order or external condition
+     */
+    function createConditionalOrder(
+        address makerAsset,
+        address takerAsset,
+        uint256 amount,
+        uint256 deadline,
+        ConditionalParams calldata conditions
+    ) external nonReentrant returns (bytes32 orderId) {
+        require(amount > 0, "Invalid amount");
+        require(deadline > block.timestamp, "Invalid deadline");
+        require(conditions.oracle != address(0), "Invalid oracle");
+
+        IERC20(makerAsset).safeTransferFrom(msg.sender, address(this), amount);
+
+        orderId = keccak256(abi.encodePacked(
+            msg.sender,
+            makerAsset,
+            takerAsset,
+            amount,
+            conditions.triggerPrice,
+            block.timestamp
+        ));
+
+        StrategyOrder storage order = strategyOrders[orderId];
+        order.orderId = orderId;
+        order.maker = msg.sender;
+        order.makerAsset = makerAsset;
+        order.takerAsset = takerAsset;
+        order.totalMakingAmount = amount;
+        order.remainingMakingAmount = amount;
+        order.strategyType = StrategyType.CONDITIONAL_ORDER;
+        order.status = ExecutionStatus.ACTIVE;
+        order.deadline = deadline;
+
+        conditionalParams[orderId] = conditions;
+        userOrders[msg.sender].push(orderId);
+
+        emit StrategyOrderCreated(
+            orderId,
+            msg.sender,
+            StrategyType.CONDITIONAL_ORDER,
+            makerAsset,
+            takerAsset,
+            amount
+        );
+
+        return orderId;
+    }
+
+
+
 
 }
