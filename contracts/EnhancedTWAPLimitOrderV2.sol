@@ -235,6 +235,19 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         bool triggerAbove
     );
 
-    
+   
+    // =============================================================================
+    // CONSTRUCTOR
+    // =============================================================================
+
+    constructor(
+        address _priceOracle,
+        address _chainlinkRegistry
+    ) Ownable(msg.sender) EIP712("EnhancedTWAPProtocol", "1") {
+        priceOracle = _priceOracle;
+        chainlinkRegistry = _chainlinkRegistry;
+        authorizedExecutors[msg.sender] = true;
+    }
+ 
 
 }
