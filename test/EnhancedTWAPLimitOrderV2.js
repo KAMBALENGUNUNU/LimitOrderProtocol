@@ -202,4 +202,46 @@ describe("EnhancedTWAPLimitOrderV2", function () {
       expect(gridInfo.levelsExecuted[1]).to.be.false;
     });
   });
-  
+   describe("Vesting Order", function () {
+    it("should create and claim vested tokens", async function () {
+      const totalAmount = ethers.parseEther("100");
+      const vestingStart = await time.latest();
+      const vestingDuration = 86400 * 30; // 30 days
+      const cliffPeriod = 86400 * 7; // 7 days
+
+      const tx = await contract.connect(user).createVestingOrder(
+        DAI,
+        user.address,
+        totalAmount,
+        vestingStart,
+        vestingDuration,
+        cliffPeriod
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      // Verify order creation
+      const order = await contract.getOrderDetails(orderId);
+      expect(order.order.strategyType).to.equal(4); // VESTING_PAYOUTS
+
+      // Try to claim during cliff period (should fail)
+      await expect(contract.connect(user).claimVestedTokens(orderId)).to.be.revertedWith(
+        "No tokens to claim"
+      );
+
+      // Advance time past cliff period
+      await time.increase(cliffPeriod + 1);
+
+      // Claim vested tokens
+      const balanceBefore = await takerAsset.balanceOf(user.address);
+      await contract.connect(user).claimVestedTokens(orderId);
+      const balanceAfter = await takerAsset.balanceOf(user.address);
+
+      const vestingInfo = await contract.getVestingInfo(orderId);
+      expect(balanceAfter - balanceBefore).to.equal(vestingInfo.claimableAmount);
+    });
+  });
+
