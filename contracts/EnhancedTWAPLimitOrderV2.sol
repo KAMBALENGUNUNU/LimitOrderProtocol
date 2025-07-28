@@ -527,6 +527,70 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         return orderId;
     }
 
-    
+    // =============================================================================
+    // EXECUTION FUNCTIONS
+    // =============================================================================
+
+    /**
+     * @dev Execute TWAP order interval
+     */
+    function executeTWAPOrder(
+        bytes32 orderId,
+        bytes calldata swapData,
+        uint256 minAmountOut
+    ) external onlyAuthorizedExecutor validOrder(orderId) nonReentrant {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.strategyType == StrategyType.TWAP, "Not TWAP order");
+        require(
+            block.timestamp >= order.lastExecution + order.intervalDuration,
+            "Too early for execution"
+        );
+
+        uint256 amountToExecute = Math.min(order.intervalAmount, order.remainingMakingAmount);
+        
+        // Execute 1inch swap
+        uint256 amountOut = _execute1inchSwap(
+            order.makerAsset,
+            order.takerAsset,
+            amountToExecute,
+            swapData,
+            minAmountOut
+        );
+
+        // Update order state
+        order.remainingMakingAmount -= amountToExecute;
+        order.executedAmount += amountToExecute;
+        order.lastExecution = block.timestamp;
+        order.executionCount++;
+
+        // Calculate execution price and update analytics
+        uint256 executionPrice = (amountOut * PRECISION) / amountToExecute;
+        order.averageExecutionPrice = (
+            (order.averageExecutionPrice * (order.executionCount - 1)) + executionPrice
+        ) / order.executionCount;
+
+        // Transfer output tokens to maker
+        IERC20(order.takerAsset).safeTransfer(order.maker, amountOut);
+
+        // Update execution history
+        executionHistory[orderId].push(block.timestamp);
+        priceHistory[orderId].push(executionPrice);
+
+        // Check if order is completed
+        if (order.remainingMakingAmount == 0) {
+            order.status = ExecutionStatus.COMPLETED;
+        }
+
+        emit OrderExecuted(
+            orderId,
+            order.executionCount,
+            amountToExecute,
+            amountOut,
+            executionPrice,
+            msg.sender
+        );
+    }
+
+
 
 }
