@@ -73,4 +73,16 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         PENDING, ACTIVE, PAUSED, COMPLETED, CANCELLED, EXPIRED 
     }
 
+     // Protocol constants optimized for 1inch integration
+    uint256 public constant MIN_INTERVAL = 1 minutes;
+    uint256 public constant MAX_INTERVAL = 365 days;
+    uint256 public constant PRECISION = 1e18;
+    uint256 public constant BASIS_POINTS = 10000;
+    uint256 public constant MAX_SLIPPAGE = 1000; // 10%
+    
+    // 1inch specific constants
+    address public constant ONEINCH_AGGREGATION_ROUTER = 0x111111125421cA6dc452d289314280a0f8842A65;
+    address public constant ONEINCH_LIMIT_ORDER_PROTOCOL = 0x119c71D3BbAC22029622cbaEc24854d3D32D2828;
+
+
 }
