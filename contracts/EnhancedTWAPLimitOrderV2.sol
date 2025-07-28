@@ -292,5 +292,38 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         require(deadline > block.timestamp, "Invalid deadline");
         require(slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
 
+        // Transfer tokens to contract
+        IERC20(makerAsset).safeTransferFrom(msg.sender, address(this), totalAmount);
+
+        // Generate unique order ID
+        orderId = keccak256(abi.encodePacked(
+            msg.sender,
+            makerAsset,
+            takerAsset,
+            totalAmount,
+            block.timestamp,
+            block.prevrandao
+        ));
+
+        // Create 1inch LOP extension data
+        LimitOrderData memory lopData = LimitOrderData({
+            salt: address(uint160(uint256(orderId))),
+            makerAsset: makerAsset,
+            takerAsset: takerAsset,
+            makerAssetData: "",
+            takerAssetData: "",
+            getMakingAmountData: abi.encodeWithSelector(
+                this.getTWAPMakingAmount.selector,
+                orderId
+            ),
+            getTakingAmountData: abi.encodeWithSelector(
+                this.getTWAPTakingAmount.selector,
+                orderId
+            ),
+            predicate: predicateData,
+            permit: "",
+            preInteraction: preInteractionData,
+            postInteraction: postInteractionData
+        });
 
 }
