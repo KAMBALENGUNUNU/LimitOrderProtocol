@@ -88,6 +88,50 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     // =============================================================================
 
     /// @dev Main strategy order with 1inch LOP integration
-    
+    struct StrategyOrder {
+        // Basic order info
+        bytes32 orderId;
+        address maker;
+        address makerAsset;
+        address takerAsset;
+        
+        // Amounts and execution
+        uint256 totalMakingAmount;
+        uint256 remainingMakingAmount;
+        uint256 executedAmount;
+        uint256 intervalAmount;
+        uint256 intervalDuration;
+        
+        // Strategy parameters
+        StrategyType strategyType;
+        ExecutionStatus status;
+        uint256 lastExecution;
+        uint256 deadline;
+        uint256 executionCount;
+        
+        // 1inch LOP extensions
+        LimitOrderData lopData;
+        
+        // Advanced features
+        uint256 priceLimit;
+        uint256 slippageTolerance;
+        bool mevProtected;
+        bool gasOptimized;
+        
+        // Grid trading specific
+        uint256 gridLevels;
+        uint256 gridSpacing;
+        uint256[] gridPrices;
+        
+        // Vesting specific
+        uint256 vestingStart;
+        uint256 vestingDuration;
+        uint256 cliffPeriod;
+        
+        // Analytics
+        uint256 averageExecutionPrice;
+        uint256 totalGasUsed;
+        int256 realizedPnL;
+    }
 
 }
