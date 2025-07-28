@@ -133,5 +133,15 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         uint256 totalGasUsed;
         int256 realizedPnL;
     }
+    /// @dev Gas station order for gasless transactions
+    struct GasStationOrder {
+        address user;
+        address tokenIn;
+        uint256 amountIn;
+        uint256 gasNeeded;
+        uint256 gasPrice;
+        bytes swapData;
+        bool fulfilled;
+    }
 
 }
