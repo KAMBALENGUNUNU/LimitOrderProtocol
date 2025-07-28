@@ -144,4 +144,15 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         bool fulfilled;
     }
 
+    /// @dev Conditional execution parameters
+    struct ConditionalParams {
+        address oracle;
+        uint256 triggerPrice;
+        bool triggerAbove;
+        uint256 timeCondition;
+        bytes32 dependentOrderId;
+        bool chainlinkFeed;
+    }
+    
+
 }
