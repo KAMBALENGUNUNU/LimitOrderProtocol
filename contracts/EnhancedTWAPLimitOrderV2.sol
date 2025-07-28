@@ -13,4 +13,20 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * @dev Advanced hackathon submission implementing custom extensions for 1inch Limit Order Protocol
  * @author Daniel KAMBALE - Hackathon Submission
  */
- 
+
+ /// @dev 1inch Limit Order Protocol interface for extensions
+interface ILimitOrderProtocol {
+    function fillOrder(
+        bytes32 orderHash,
+        uint256 makingAmount,
+        uint256 takingAmount,
+        bytes calldata makerAssetData,
+        bytes calldata takerAssetData,
+        bytes calldata getMakingAmountData,
+        bytes calldata getTakingAmountData,
+        bytes calldata predicate,
+        bytes calldata makerPermit,
+        bytes calldata preInteractionData,
+        bytes calldata postInteractionData
+    ) external;
+}
