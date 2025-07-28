@@ -49,4 +49,108 @@ describe("EnhancedTWAPLimitOrderV2", function () {
     // Approve contract to spend user's tokens
     await takerAsset.connect(user).approve(contract.getAddress(), ethers.parseEther("1000"));
   });
-  
+   describe("TWAP Order", function () {
+    it("should create and execute a TWAP order", async function () {
+      const totalAmount = ethers.parseEther("10");
+      const intervalAmount = ethers.parseEther("2");
+      const intervalDuration = MIN_INTERVAL;
+      const priceLimit = ethers.parseEther("1");
+      const deadline = (await time.latest()) + 86400; // 1 day from now
+      const slippageTolerance = 500; // 5%
+      const predicateData = "0x";
+      const preInteractionData = "0x";
+      const postInteractionData = "0x";
+
+      // Create TWAP order
+      const tx = await contract.connect(user).createTWAPOrder(
+        WETH,
+        DAI,
+        totalAmount,
+        intervalAmount,
+        intervalDuration,
+        priceLimit,
+        deadline,
+        slippageTolerance,
+        predicateData,
+        preInteractionData,
+        postInteractionData
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      // Verify order creation
+      const order = await contract.getOrderDetails(orderId);
+      expect(order.order.maker).to.equal(user.address);
+      expect(order.order.totalMakingAmount).to.equal(totalAmount);
+      expect(order.order.strategyType).to.equal(0); // TWAP
+      expect(order.order.status).to.equal(1); // ACTIVE
+
+      // Mock swap data (simplified for test)
+      const swapData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["address", "address", "uint256", "uint256"],
+        [WETH, DAI, intervalAmount, ethers.parseEther("2000")] // Mock 1 WETH = 2000 DAI
+      );
+
+      // Advance time for TWAP execution
+      await time.increase(intervalDuration + 1);
+
+      // Execute TWAP order
+      await expect(
+        contract.connect(executor).executeTWAPOrder(orderId, swapData, ethers.parseEther("1900")) // Min amount out with slippage
+      )
+        .to.emit(contract, "OrderExecuted")
+        .withArgs(
+          orderId,
+          1,
+          intervalAmount,
+          ethers.parseEther("2000"),
+          ethers.parseEther("2000"), // Execution price
+          executor.address
+        );
+
+      // Verify updated state
+      const updatedOrder = await contract.getOrderDetails(orderId);
+      expect(updatedOrder.order.remainingMakingAmount).to.equal(totalAmount - intervalAmount);
+      expect(updatedOrder.order.executionCount).to.equal(1);
+    });
+
+    it("should fail if interval not elapsed", async function () {
+      const totalAmount = ethers.parseEther("10");
+      const intervalAmount = ethers.parseEther("2");
+      const intervalDuration = MIN_INTERVAL;
+      const priceLimit = ethers.parseEther("1");
+      const deadline = (await time.latest()) + 86400;
+      const slippageTolerance = 500;
+
+      const tx = await contract.connect(user).createTWAPOrder(
+        WETH,
+        DAI,
+        totalAmount,
+        intervalAmount,
+        intervalDuration,
+        priceLimit,
+        deadline,
+        slippageTolerance,
+        "0x",
+        "0x",
+        "0x"
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      const swapData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["address", "address", "uint256", "uint256"],
+        [WETH, DAI, intervalAmount, ethers.parseEther("2000")]
+      );
+
+      await expect(
+        contract.connect(executor).executeTWAPOrder(orderId, swapData, ethers.parseEther("1900"))
+      ).to.be.revertedWith("Too early for execution");
+    });
+  });
