@@ -83,6 +83,11 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     // 1inch specific constants
     address public constant ONEINCH_AGGREGATION_ROUTER = 0x111111125421cA6dc452d289314280a0f8842A65;
     address public constant ONEINCH_LIMIT_ORDER_PROTOCOL = 0x119c71D3BbAC22029622cbaEc24854d3D32D2828;
+  // =============================================================================
+    // ENHANCED ORDER STRUCTURE WITH 1INCH EXTENSIONS
+    // =============================================================================
 
+    /// @dev Main strategy order with 1inch LOP integration
+    
 
 }
