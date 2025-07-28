@@ -1110,5 +1110,38 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     }
 
 
+    /**
+     * @dev Batch execute multiple orders in one transaction
+     */
+    function batchExecuteOrders(
+        bytes32[] calldata orderIds,
+        bytes[] calldata swapDataArray,
+        uint256[] calldata minAmountsOut
+    ) external onlyAuthorizedExecutor nonReentrant {
+        require(orderIds.length == swapDataArray.length, "Array length mismatch");
+        require(orderIds.length == minAmountsOut.length, "Array length mismatch");
+        require(orderIds.length <= 10, "Too many orders"); // Gas limit protection
+
+        for (uint256 i = 0; i < orderIds.length; i++) {
+            bytes32 orderId = orderIds[i];
+            StrategyOrder storage order = strategyOrders[orderId];
+            
+            // Skip invalid orders instead of reverting
+            if (order.status != ExecutionStatus.ACTIVE || 
+                order.remainingMakingAmount == 0 ||
+                block.timestamp > order.deadline) {
+                continue;
+            }
+
+            try this.executeTWAPOrder(orderId, swapDataArray[i], minAmountsOut[i]) {
+                // Order executed successfully
+            } catch {
+                // Continue with next order if this one fails
+                continue;
+            }
+        }
+    }
+
+
 
 }
