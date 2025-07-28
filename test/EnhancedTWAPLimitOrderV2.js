@@ -245,3 +245,43 @@ describe("EnhancedTWAPLimitOrderV2", function () {
     });
   });
 
+  describe("Gas Station Order", function () {
+    it("should create and fulfill a gas station order", async function () {
+      const amountIn = ethers.parseEther("100");
+      const gasNeeded = 100000; // 100k gas units
+      const swapData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["address", "address", "uint256", "uint256"],
+        [DAI, ethers.constants.AddressZero, amountIn, ethers.parseEther("0.05")] // Mock 100 DAI = 0.05 ETH
+      );
+
+      const tx = await contract.connect(user).createGasStationOrder(
+        DAI,
+        amountIn,
+        gasNeeded,
+        swapData
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      // Fund contract with ETH for gas
+      await deployer.sendTransaction({
+        to: contract.getAddress(),
+        value: ethers.parseEther("0.1"),
+      });
+
+      // Fulfill gas station order
+      const userEthBalanceBefore = await ethers.provider.getBalance(user.address);
+      await expect(contract.connect(executor).fulfillGasStation(orderId))
+        .to.emit(contract, "GasStationFulfilled")
+        .withArgs(orderId, user.address, gasNeeded, amountIn);
+
+      const userEthBalanceAfter = await ethers.provider.getBalance(user.address);
+      expect(userEthBalanceAfter - userEthBalanceBefore).to.be.closeTo(
+        ethers.parseEther("0.05"),
+        ethers.parseEther("0.01") // Allow some gas cost variance
+      );
+    });
+  });
