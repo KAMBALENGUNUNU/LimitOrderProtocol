@@ -641,7 +641,7 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     /**
      * @dev Claim vested tokens
      */
-     
+
     function claimVestedTokens(bytes32 orderId) external nonReentrant {
         StrategyOrder storage order = strategyOrders[orderId];
         require(order.strategyType == StrategyType.VESTING_PAYOUTS, "Not vesting order");
@@ -661,6 +661,47 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         emit VestingClaimed(orderId, claimableAmount, claimedAmount[orderId], order.remainingMakingAmount);
     }
 
+
+
+    /**
+     * @dev Fulfill gas station order
+     */
+    function fulfillGasStation(bytes32 orderId) external onlyAuthorizedExecutor nonReentrant {
+        GasStationOrder storage gasOrder = gasStationOrders[orderId];
+        require(!gasOrder.fulfilled, "Already fulfilled");
+        require(gasOrder.user != address(0), "Invalid order");
+
+        uint256 gasRequired = gasOrder.gasNeeded;
+        uint256 gasCost = gasRequired * gasOrder.gasPrice;
+        
+        // Create a local copy of swapData to convert storage to memory
+        bytes memory swapData = gasOrder.swapData;
+        
+        // Execute swap to get ETH
+        uint256 ethReceived = _execute1inchSwap(
+            gasOrder.tokenIn,
+            address(0), // ETH
+            gasOrder.amountIn,
+            swapData,
+            gasCost
+        );
+
+        require(ethReceived >= gasCost, "Insufficient ETH received");
+
+        // Transfer ETH to user for gas
+        payable(gasOrder.user).transfer(gasCost);
+        
+        // Return excess ETH if any
+        if (ethReceived > gasCost) {
+            payable(gasOrder.user).transfer(ethReceived - gasCost);
+        }
+
+        gasOrder.fulfilled = true;
+
+        emit GasStationFulfilled(orderId, gasOrder.user, gasRequired, gasOrder.amountIn);
+    }
+
+    
 
 
 }
