@@ -214,5 +214,11 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         bool isBuy
     );
 
+    event VestingClaimed(
+        bytes32 indexed orderId,
+        uint256 amount,
+        uint256 totalClaimed,
+        uint256 remaining
+    );
 
 }
