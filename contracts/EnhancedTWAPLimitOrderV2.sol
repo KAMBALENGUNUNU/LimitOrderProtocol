@@ -427,6 +427,60 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
 
         return orderId;
     }
-    
+
+     /**
+     * @dev Create a vesting payout order with cliff and linear vesting
+     */
+    function createVestingOrder(
+        address asset,
+        address beneficiary,
+        uint256 totalAmount,
+        uint256 vestingStart,
+        uint256 vestingDuration,
+        uint256 cliffPeriod
+    ) external nonReentrant returns (bytes32 orderId) {
+        require(totalAmount > 0, "Invalid amount");
+        require(vestingStart >= block.timestamp, "Invalid start time");
+        require(vestingDuration > 0, "Invalid duration");
+        require(cliffPeriod <= vestingDuration, "Cliff too long");
+
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), totalAmount);
+
+        orderId = keccak256(abi.encodePacked(
+            msg.sender,
+            beneficiary,
+            asset,
+            totalAmount,
+            vestingStart,
+            block.timestamp
+        ));
+
+        StrategyOrder storage order = strategyOrders[orderId];
+        order.orderId = orderId;
+        order.maker = msg.sender;
+        order.makerAsset = asset;
+        order.takerAsset = asset; // Same asset for vesting
+        order.totalMakingAmount = totalAmount;
+        order.remainingMakingAmount = totalAmount;
+        order.strategyType = StrategyType.VESTING_PAYOUTS;
+        order.status = ExecutionStatus.ACTIVE;
+        order.deadline = vestingStart + vestingDuration;
+        order.vestingStart = vestingStart;
+        order.vestingDuration = vestingDuration;
+        order.cliffPeriod = cliffPeriod;
+
+        userOrders[beneficiary].push(orderId);
+
+        emit StrategyOrderCreated(
+            orderId,
+            msg.sender,
+            StrategyType.VESTING_PAYOUTS,
+            asset,
+            asset,
+            totalAmount
+        );
+
+        return orderId;
+    }
 
 }
