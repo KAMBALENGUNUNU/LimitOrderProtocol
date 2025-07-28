@@ -947,4 +947,59 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
 
 
 
+    // =============================================================================
+    // ADVANCED FEATURES
+    // =============================================================================
+
+    /**
+     * @dev Create a trailing stop-loss order
+     */
+    function createTrailingStopLoss(
+        address asset,
+        uint256 amount,
+        uint256 trailPercentage,
+        uint256 deadline
+    ) external nonReentrant returns (bytes32 orderId) {
+        require(amount > 0, "Invalid amount");
+        require(trailPercentage > 0 && trailPercentage <= 5000, "Invalid trail %");
+        require(deadline > block.timestamp, "Invalid deadline");
+
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
+
+        orderId = keccak256(abi.encodePacked(
+            msg.sender,
+            asset,
+            amount,
+            trailPercentage,
+            block.timestamp
+        ));
+
+        StrategyOrder storage order = strategyOrders[orderId];
+        order.orderId = orderId;
+        order.maker = msg.sender;
+        order.makerAsset = asset;
+        order.takerAsset = address(0); // Will be set to stablecoin when triggered
+        order.totalMakingAmount = amount;
+        order.remainingMakingAmount = amount;
+        order.strategyType = StrategyType.STOP_LOSS_TRAILING;
+        order.status = ExecutionStatus.ACTIVE;
+        order.deadline = deadline;
+        order.slippageTolerance = trailPercentage;
+
+        userOrders[msg.sender].push(orderId);
+
+        emit StrategyOrderCreated(
+            orderId,
+            msg.sender,
+            StrategyType.STOP_LOSS_TRAILING,
+            asset,
+            address(0),
+            amount
+        );
+
+        return orderId;
+    }
+
+
+
 }
