@@ -389,4 +389,44 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
             block.timestamp
         ));
 
+        
+
+        // Calculate grid prices
+        uint256[] memory gridPrices = new uint256[](gridLevels);
+        uint256 priceStep = (upperPrice - lowerPrice) / (gridLevels - 1);
+        
+        for (uint256 i = 0; i < gridLevels; i++) {
+            gridPrices[i] = lowerPrice + (i * priceStep);
+        }
+
+        StrategyOrder storage order = strategyOrders[orderId];
+        order.orderId = orderId;
+        order.maker = msg.sender;
+        order.makerAsset = baseAsset;
+        order.takerAsset = quoteAsset;
+        order.totalMakingAmount = totalAmount;
+        order.remainingMakingAmount = totalAmount;
+        order.intervalAmount = totalAmount / gridLevels;
+        order.strategyType = StrategyType.GRID_TRADING;
+        order.status = ExecutionStatus.ACTIVE;
+        order.deadline = deadline;
+        order.gridLevels = gridLevels;
+        order.gridSpacing = priceStep;
+        order.gridPrices = gridPrices;
+
+        userOrders[msg.sender].push(orderId);
+
+        emit StrategyOrderCreated(
+            orderId,
+            msg.sender,
+            StrategyType.GRID_TRADING,
+            baseAsset,
+            quoteAsset,
+            totalAmount
+        );
+
+        return orderId;
+    }
+    
+
 }
