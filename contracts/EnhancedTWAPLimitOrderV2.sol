@@ -1141,7 +1141,53 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
             }
         }
     }
+     
+    // =============================================================================
+    // ANALYTICS AND REPORTING
+    // =============================================================================
 
+    function getOrderAnalytics(bytes32 orderId) external view returns (
+        uint256 totalExecutions,
+        uint256 averageGasUsed,
+        uint256 totalVolume,
+        int256 realizedPnL,
+        uint256 efficiency,
+        uint256 lastExecutionTime
+    ) {
+        StrategyOrder storage order = strategyOrders[orderId];
+        
+        totalExecutions = order.executionCount;
+        averageGasUsed = order.executionCount > 0 ? order.totalGasUsed / order.executionCount : 0;
+        totalVolume = order.executedAmount;
+        realizedPnL = order.realizedPnL;
+        efficiency = order.executedAmount > 0 ? 
+            (order.executedAmount * 100) / order.totalMakingAmount : 0;
+        lastExecutionTime = order.lastExecution;
+    }
 
+    function getProtocolStats() external view returns (
+        uint256 totalOrders,
+        uint256 totalVolume,
+        uint256 totalFees,
+        uint256 activeOrders
+    ) {
+        // This would be implemented with proper counters in production
+        totalOrders = 0; // Placeholder
+        totalVolume = 0; // Placeholder
+        totalFees = 0; // Placeholder
+        activeOrders = 0; // Placeholder
+    }
+
+    // =============================================================================
+    // RECEIVE FUNCTION FOR ETH HANDLING
+    // =============================================================================
+
+    receive() external payable {
+        // Allow contract to receive ETH for gas station functionality
+    }
+
+    fallback() external payable {
+        revert("Function not found");
+    }
 
 }
