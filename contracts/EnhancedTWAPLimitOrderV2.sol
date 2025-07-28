@@ -638,6 +638,28 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     }
 
 
+    /**
+     * @dev Claim vested tokens
+     */
+     
+    function claimVestedTokens(bytes32 orderId) external nonReentrant {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.strategyType == StrategyType.VESTING_PAYOUTS, "Not vesting order");
+        require(block.timestamp >= order.vestingStart, "Vesting not started");
+        
+        uint256 vestedNow = _calculateVestedAmount(orderId);
+        uint256 claimableAmount = vestedNow - claimedAmount[orderId];
+        
+        require(claimableAmount > 0, "No tokens to claim");
+
+        claimedAmount[orderId] += claimableAmount;
+        order.executedAmount += claimableAmount;
+        order.remainingMakingAmount -= claimableAmount;
+
+        IERC20(order.makerAsset).safeTransfer(msg.sender, claimableAmount);
+
+        emit VestingClaimed(orderId, claimableAmount, claimedAmount[orderId], order.remainingMakingAmount);
+    }
 
 
 
