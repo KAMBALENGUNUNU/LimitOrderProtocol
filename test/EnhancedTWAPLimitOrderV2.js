@@ -154,3 +154,52 @@ describe("EnhancedTWAPLimitOrderV2", function () {
       ).to.be.revertedWith("Too early for execution");
     });
   });
+  
+  describe("Grid Trading Order", function () {
+    it("should create and execute a grid trading order", async function () {
+      const totalAmount = ethers.parseEther("10");
+      const gridLevels = 5;
+      const lowerPrice = ethers.parseEther("1500");
+      const upperPrice = ethers.parseEther("2500");
+      const deadline = (await time.latest()) + 86400;
+
+      const tx = await contract.connect(user).createGridTradingOrder(
+        WETH,
+        DAI,
+        totalAmount,
+        gridLevels,
+        lowerPrice,
+        upperPrice,
+        deadline
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      // Verify order creation
+      const order = await contract.getOrderDetails(orderId);
+      expect(order.order.strategyType).to.equal(2); // GRID_TRADING
+      expect(order.order.gridLevels).to.equal(gridLevels);
+
+      // Mock swap data
+      const swapData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["address", "address", "uint256", "uint256"],
+        [WETH, DAI, totalAmount / gridLevels, ethers.parseEther("400")] // Mock 1/5 WETH = 400 DAI
+      );
+
+      // Execute grid level
+      await expect(
+        contract.connect(executor).executeGridLevel(orderId, 0, swapData, ethers.parseEther("380"))
+      )
+        .to.emit(contract, "GridLevelExecuted")
+        .withArgs(orderId, 0, ethers.parseEther("1"), totalAmount / gridLevels, true); // Mock price = 1 for simplicity
+
+      // Verify grid level state
+      const gridInfo = await contract.getGridTradingInfo(orderId);
+      expect(gridInfo.levelsExecuted[0]).to.be.true;
+      expect(gridInfo.levelsExecuted[1]).to.be.false;
+    });
+  });
+  
