@@ -249,5 +249,22 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         authorizedExecutors[msg.sender] = true;
     }
  
+    // =============================================================================
+    // MODIFIERS
+    // =============================================================================
+
+    modifier onlyAuthorizedExecutor() {
+        require(authorizedExecutors[msg.sender] || msg.sender == owner(), "Unauthorized executor");
+        _;
+    }
+
+    modifier validOrder(bytes32 orderId) {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.status == ExecutionStatus.ACTIVE, "Order not active");
+        require(order.deadline > block.timestamp, "Order expired");
+        require(order.remainingMakingAmount > 0, "Order completed");
+        _;
+    }
+    
 
 }
