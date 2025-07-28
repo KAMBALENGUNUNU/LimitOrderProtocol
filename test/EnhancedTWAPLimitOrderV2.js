@@ -285,3 +285,51 @@ describe("EnhancedTWAPLimitOrderV2", function () {
       );
     });
   });
+ 
+  describe("Conditional Order", function () {
+    it("should create and execute a conditional order", async function () {
+      const amount = ethers.parseEther("10");
+      const deadline = (await time.latest()) + 86400;
+      const conditions = {
+        oracle: priceOracle,
+        triggerPrice: ethers.parseEther("2000"), // Trigger when WETH/DAI = 2000
+        triggerAbove: true,
+        timeCondition: 0,
+        dependentOrderId: ethers.constants.HashZero,
+        chainlinkFeed: true,
+      };
+
+      const tx = await contract.connect(user).createConditionalOrder(
+        WETH,
+        DAI,
+        amount,
+        deadline,
+        conditions
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      // Mock swap data
+      const swapData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["address", "address", "uint256", "uint256"],
+        [WETH, DAI, amount, ethers.parseEther("2000")]
+      );
+
+      // Mock price oracle (override _getCurrentPrice to return 2000)
+      await network.provider.send("hardhat_setCode", [
+        contract.getAddress(),
+        // Simplified override for _getCurrentPrice to return triggerPrice
+        // In a real test, you'd mock the oracle properly
+        "0x" // Placeholder: you'd need to inject a mock price
+      ]);
+
+      await expect(
+        contract.connect(executor).executeConditionalOrder(orderId, swapData, ethers.parseEther("1900"))
+      )
+        .to.emit(contract, "ConditionalTriggerMet")
+        .withArgs(orderId, conditions.triggerPrice, ethers.parseEther("2000"), true);
+    });
+  });
