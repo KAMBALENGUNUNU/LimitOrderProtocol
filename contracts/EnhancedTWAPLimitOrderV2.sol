@@ -153,6 +153,17 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         bytes32 dependentOrderId;
         bool chainlinkFeed;
     }
-    
+
+    // =============================================================================
+    // STORAGE
+    // =============================================================================
+
+    mapping(bytes32 => StrategyOrder) public strategyOrders;
+    mapping(address => bytes32[]) public userOrders;
+    mapping(bytes32 => GasStationOrder) public gasStationOrders;
+    mapping(bytes32 => ConditionalParams) public conditionalParams;
+    mapping(bytes32 => uint256[]) public executionHistory;
+    mapping(bytes32 => uint256[]) public priceHistory;
+
 
 }
