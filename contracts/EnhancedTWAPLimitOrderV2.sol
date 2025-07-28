@@ -1053,6 +1053,62 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     }
 
 
+    /**
+     * @dev Execute conditional order when trigger condition is met
+     */
+    function executeConditionalOrder(
+        bytes32 orderId,
+        bytes calldata swapData,
+        uint256 minAmountOut
+    ) external onlyAuthorizedExecutor validOrder(orderId) nonReentrant {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.strategyType == StrategyType.CONDITIONAL_ORDER, "Not conditional order");
+
+        ConditionalParams storage conditions = conditionalParams[orderId];
+        
+        // Check trigger condition
+        uint256 currentPrice = _getCurrentPrice(order.makerAsset, order.takerAsset);
+        bool conditionMet = conditions.triggerAbove ? 
+            currentPrice >= conditions.triggerPrice : 
+            currentPrice <= conditions.triggerPrice;
+        
+        require(conditionMet, "Trigger condition not met");
+
+        // Check time condition if set
+        if (conditions.timeCondition > 0) {
+            require(block.timestamp >= conditions.timeCondition, "Time condition not met");
+        }
+
+        // Check dependent order if set
+        if (conditions.dependentOrderId != bytes32(0)) {
+            StrategyOrder storage dependentOrder = strategyOrders[conditions.dependentOrderId];
+            require(
+                dependentOrder.status == ExecutionStatus.COMPLETED,
+                "Dependent order not completed"
+            );
+        }
+
+        // Execute the swap
+        uint256 amountOut = _execute1inchSwap(
+            order.makerAsset,
+            order.takerAsset,
+            order.remainingMakingAmount,
+            swapData,
+            minAmountOut
+        );
+
+        // Update order state
+        order.executedAmount = order.remainingMakingAmount;
+        order.remainingMakingAmount = 0;
+        order.status = ExecutionStatus.COMPLETED;
+        order.executionCount = 1;
+
+        IERC20(order.takerAsset).safeTransfer(order.maker, amountOut);
+
+        emit ConditionalTriggerMet(orderId, conditions.triggerPrice, currentPrice, conditions.triggerAbove);
+        emit OrderExecuted(orderId, 1, order.executedAmount, amountOut, currentPrice, msg.sender);
+    }
+
 
 
 }
