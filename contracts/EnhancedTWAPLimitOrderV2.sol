@@ -806,5 +806,145 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     }
 
 
+    // =============================================================================
+    // ADMIN FUNCTIONS
+    // =============================================================================
+
+    function addAuthorizedExecutor(address executor) external onlyOwner {
+        authorizedExecutors[executor] = true;
+    }
+
+    function removeAuthorizedExecutor(address executor) external onlyOwner {
+        authorizedExecutors[executor] = false;
+    }
+
+    function setProtocolFee(uint256 newFee) external onlyOwner {
+        require(newFee <= 100, "Fee too high"); // Max 1%
+        protocolFee = newFee;
+    }
+
+    function setPriceOracle(address newOracle) external onlyOwner {
+        priceOracle = newOracle;
+    }
+
+    // =============================================================================
+    // VIEW FUNCTIONS
+    // =============================================================================
+
+    function getOrderDetails(bytes32 orderId) external view returns (
+        StrategyOrder memory order,
+        uint256[] memory execHistory,
+        uint256[] memory priceHist
+    ) {
+        order = strategyOrders[orderId];
+        execHistory = executionHistory[orderId];
+        priceHist = priceHistory[orderId];
+    }
+
+    function getUserOrders(address user) external view returns (bytes32[] memory) {
+        return userOrders[user];
+    }
+
+    function canExecuteOrder(bytes32 orderId) external view returns (bool canExecute, string memory reason) {
+        StrategyOrder storage order = strategyOrders[orderId];
+        
+        if (order.status != ExecutionStatus.ACTIVE) {
+            return (false, "Order not active");
+        }
+        
+        if (order.remainingMakingAmount == 0) {
+            return (false, "Order completed");
+        }
+        
+        if (block.timestamp > order.deadline) {
+            return (false, "Order expired");
+        }
+        
+        if (order.strategyType == StrategyType.TWAP) {
+            if (block.timestamp < order.lastExecution + order.intervalDuration) {
+                return (false, "Too early for TWAP execution");
+            }
+        }
+        
+        return (true, "Order can be executed");
+    }
+
+    function getVestingInfo(bytes32 orderId) external view returns (
+        uint256 totalAmount,
+        uint256 currentVestedAmount,
+        uint256 currentClaimedAmount,
+        uint256 claimableAmount,
+        uint256 vestingStart,
+        uint256 vestingEnd,
+        uint256 cliffEnd
+    ) {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.strategyType == StrategyType.VESTING_PAYOUTS, "Not vesting order");
+        
+        totalAmount = order.totalMakingAmount;
+        currentVestedAmount = _calculateVestedAmount(orderId);
+        currentClaimedAmount = claimedAmount[orderId];
+        claimableAmount = currentVestedAmount > currentClaimedAmount ? currentVestedAmount - currentClaimedAmount : 0;
+        vestingStart = order.vestingStart;
+        vestingEnd = order.vestingStart + order.vestingDuration;
+        cliffEnd = order.vestingStart + order.cliffPeriod;
+    }
+
+    function getGridTradingInfo(bytes32 orderId) external view returns (
+        uint256[] memory gridPrices,
+        bool[] memory levelsExecuted,
+        uint256 currentLevel,
+        uint256 totalLevels
+    ) {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.strategyType == StrategyType.GRID_TRADING, "Not grid order");
+        
+        gridPrices = order.gridPrices;
+        totalLevels = order.gridLevels;
+        currentLevel = currentGridLevel[orderId];
+        
+        levelsExecuted = new bool[](totalLevels);
+        for (uint256 i = 0; i < totalLevels; i++) {
+            levelsExecuted[i] = gridLevelExecuted[orderId][i];
+        }
+    }
+
+    // =============================================================================
+    // EMERGENCY FUNCTIONS
+    // =============================================================================
+
+    function cancelOrder(bytes32 orderId) external nonReentrant {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.maker == msg.sender, "Not order maker");
+        require(order.status == ExecutionStatus.ACTIVE, "Order not active");
+
+        order.status = ExecutionStatus.CANCELLED;
+
+        // Refund remaining tokens
+        if (order.remainingMakingAmount > 0) {
+            IERC20(order.makerAsset).safeTransfer(order.maker, order.remainingMakingAmount);
+            order.remainingMakingAmount = 0;
+        }
+
+        emit OrderExecuted(orderId, 0, 0, 0, 0, address(0)); // Cancellation event
+    }
+
+    function pauseOrder(bytes32 orderId) external {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.maker == msg.sender, "Not order maker");
+        require(order.status == ExecutionStatus.ACTIVE, "Order not active");
+        
+        order.status = ExecutionStatus.PAUSED;
+    }
+
+    function resumeOrder(bytes32 orderId) external {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.maker == msg.sender, "Not order maker");
+        require(order.status == ExecutionStatus.PAUSED, "Order not paused");
+        
+        order.status = ExecutionStatus.ACTIVE;
+    }
+
+
 
 }
