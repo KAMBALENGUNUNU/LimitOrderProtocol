@@ -333,3 +333,89 @@ describe("EnhancedTWAPLimitOrderV2", function () {
         .withArgs(orderId, conditions.triggerPrice, ethers.parseEther("2000"), true);
     });
   });
+ describe("Order Management", function () {
+    it("should allow pausing and resuming an order", async function () {
+      const totalAmount = ethers.parseEther("10");
+      const intervalAmount = ethers.parseEther("2");
+      const intervalDuration = MIN_INTERVAL;
+      const priceLimit = ethers.parseEther("1");
+      const deadline = (await time.latest()) + 86400;
+      const slippageTolerance = 500;
+
+      const tx = await contract.connect(user).createTWAPOrder(
+        WETH,
+        DAI,
+        totalAmount,
+        intervalAmount,
+        intervalDuration,
+        priceLimit,
+        deadline,
+        slippageTolerance,
+        "0x",
+        "0x",
+        "0x"
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      // Pause order
+      await contract.connect(user).pauseOrder(orderId);
+      let order = await contract.getOrderDetails(orderId);
+      expect(order.order.status).to.equal(2); // PAUSED
+
+      // Try to execute (should fail)
+      const swapData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["address", "address", "uint256", "uint256"],
+        [WETH, DAI, intervalAmount, ethers.parseEther("2000")]
+      );
+      await expect(
+        contract.connect(executor).executeTWAPOrder(orderId, swapData, ethers.parseEther("1900"))
+      ).to.be.revertedWith("Order not active");
+
+      // Resume order
+      await contract.connect(user).resumeOrder(orderId);
+      order = await contract.getOrderDetails(orderId);
+      expect(order.order.status).to.equal(1); // ACTIVE
+    });
+
+    it("should allow canceling an order", async function () {
+      const totalAmount = ethers.parseEther("10");
+      const intervalAmount = ethers.parseEther("2");
+      const intervalDuration = MIN_INTERVAL;
+      const priceLimit = ethers.parseEther("1");
+      const deadline = (await time.latest()) + 86400;
+      const slippageTolerance = 500;
+
+      const tx = await contract.connect(user).createTWAPOrder(
+        WETH,
+        DAI,
+        totalAmount,
+        intervalAmount,
+        intervalDuration,
+        priceLimit,
+        deadline,
+        slippageTolerance,
+        "0x",
+        "0x",
+        "0x"
+      );
+
+      const receipt = await tx.wait();
+      const orderId = receipt.logs
+        .filter((log) => log.eventName === "StrategyOrderCreated")[0]
+        .args.orderId;
+
+      // Cancel order
+      const balanceBefore = await takerAsset.balanceOf(user.address);
+      await contract.connect(user).cancelOrder(orderId);
+      const balanceAfter = await takerAsset.balanceOf(user.address);
+      expect(balanceAfter - balanceBefore).to.equal(totalAmount);
+
+      const order = await contract.getOrderDetails(orderId);
+      expect(order.order.status).to.equal(4); // CANCELLED
+      expect(order.order.remainingMakingAmount).to.equal(0);
+    });
+  });
