@@ -326,4 +326,38 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
             postInteraction: postInteractionData
         });
 
+        
+        // Create strategy order
+        StrategyOrder storage order = strategyOrders[orderId];
+        order.orderId = orderId;
+        order.maker = msg.sender;
+        order.makerAsset = makerAsset;
+        order.takerAsset = takerAsset;
+        order.totalMakingAmount = totalAmount;
+        order.remainingMakingAmount = totalAmount;
+        order.intervalAmount = intervalAmount;
+        order.intervalDuration = intervalDuration;
+        order.strategyType = StrategyType.TWAP;
+        order.status = ExecutionStatus.ACTIVE;
+        order.deadline = deadline;
+        order.lopData = lopData;
+        order.priceLimit = priceLimit;
+        order.slippageTolerance = slippageTolerance;
+        order.mevProtected = true;
+        order.gasOptimized = true;
+
+        userOrders[msg.sender].push(orderId);
+
+        emit StrategyOrderCreated(
+            orderId, 
+            msg.sender, 
+            StrategyType.TWAP, 
+            makerAsset, 
+            takerAsset, 
+            totalAmount
+        );
+
+        return orderId;
+    }
+
 }
