@@ -54,4 +54,23 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         bytes postInteraction;  // Post-execution hooks
     }
 
+     // =============================================================================
+    // CORE ENUMS & CONSTANTS
+    // =============================================================================
+
+    enum StrategyType { 
+        TWAP,               // Time-Weighted Average Price
+        DCA,                // Dollar Cost Averaging
+        GRID_TRADING,       // Grid trading strategy
+        STOP_LOSS_TRAILING, // Trailing stop-loss
+        VESTING_PAYOUTS,    // Vesting with limit orders
+        GAS_STATION,        // Gas station functionality
+        REBALANCING,        // Portfolio rebalancing
+        CONDITIONAL_ORDER   // Complex conditional orders
+    }
+
+    enum ExecutionStatus { 
+        PENDING, ACTIVE, PAUSED, COMPLETED, CANCELLED, EXPIRED 
+    }
+
 }
