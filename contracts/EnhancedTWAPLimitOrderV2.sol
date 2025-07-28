@@ -183,5 +183,19 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     address public priceOracle;
     address public chainlinkRegistry;
 
+    // =============================================================================
+    // EVENTS
+    // =============================================================================
+
+    event StrategyOrderCreated(
+        bytes32 indexed orderId,
+        address indexed maker,
+        StrategyType strategyType,
+        address makerAsset,
+        address takerAsset,
+        uint256 totalAmount
+    );
+    
+
 
 }
