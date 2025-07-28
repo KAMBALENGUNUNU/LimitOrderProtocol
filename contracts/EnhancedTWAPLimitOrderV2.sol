@@ -591,6 +591,54 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         );
     }
 
+    /**
+     * @dev Execute grid trading level
+     */
+    function executeGridLevel(
+        bytes32 orderId,
+        uint256 gridLevel,
+        bytes calldata swapData,
+        uint256 minAmountOut
+    ) external onlyAuthorizedExecutor validOrder(orderId) nonReentrant {
+        StrategyOrder storage order = strategyOrders[orderId];
+        require(order.strategyType == StrategyType.GRID_TRADING, "Not grid order");
+        require(gridLevel < order.gridLevels, "Invalid grid level");
+        require(!gridLevelExecuted[orderId][gridLevel], "Level already executed");
+
+        uint256 currentPrice = _getCurrentPrice(order.makerAsset, order.takerAsset);
+        uint256 targetPrice = order.gridPrices[gridLevel];
+        
+        // Check if price condition is met (simplified logic)
+        require(
+            (currentPrice >= targetPrice * 99 / 100) && 
+            (currentPrice <= targetPrice * 101 / 100),
+            "Price condition not met"
+        );
+
+        uint256 amountToExecute = order.intervalAmount;
+        
+        // Execute swap
+        uint256 amountOut = _execute1inchSwap(
+            order.makerAsset,
+            order.takerAsset,
+            amountToExecute,
+            swapData,
+            minAmountOut
+        );
+
+        // Update state
+        order.remainingMakingAmount -= amountToExecute;
+        order.executedAmount += amountToExecute;
+        order.executionCount++;
+        gridLevelExecuted[orderId][gridLevel] = true;
+
+        IERC20(order.takerAsset).safeTransfer(order.maker, amountOut);
+
+        emit GridLevelExecuted(orderId, gridLevel, currentPrice, amountToExecute, true);
+    }
+
+
+
 
 
 }
