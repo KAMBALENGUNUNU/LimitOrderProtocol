@@ -360,4 +360,33 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         return orderId;
     }
 
+    
+    /**
+     * @dev Create a grid trading strategy with multiple price levels
+     */
+    function createGridTradingOrder(
+        address baseAsset,
+        address quoteAsset,
+        uint256 totalAmount,
+        uint256 gridLevels,
+        uint256 lowerPrice,
+        uint256 upperPrice,
+        uint256 deadline
+    ) external nonReentrant returns (bytes32 orderId) {
+        require(totalAmount > 0, "Invalid amount");
+        require(gridLevels >= 2 && gridLevels <= 20, "Invalid grid levels");
+        require(lowerPrice < upperPrice, "Invalid price range");
+        require(deadline > block.timestamp, "Invalid deadline");
+
+        IERC20(baseAsset).safeTransferFrom(msg.sender, address(this), totalAmount);
+
+        orderId = keccak256(abi.encodePacked(
+            msg.sender,
+            baseAsset,
+            quoteAsset,
+            totalAmount,
+            gridLevels,
+            block.timestamp
+        ));
+
 }
