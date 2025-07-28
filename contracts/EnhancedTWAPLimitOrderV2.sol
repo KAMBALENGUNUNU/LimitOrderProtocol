@@ -30,3 +30,11 @@ interface ILimitOrderProtocol {
         bytes calldata postInteractionData
     ) external;
 }
+
+contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
+    using SafeERC20 for IERC20;
+    using Math for uint256;
+
+
+    
+}
