@@ -483,4 +483,50 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
         return orderId;
     }
 
+       /**
+     * @dev Create a gas station order for gasless transactions
+     */
+    function createGasStationOrder(
+        address tokenIn,
+        uint256 amountIn,
+        uint256 gasNeeded,
+        bytes calldata swapData
+    ) external nonReentrant returns (bytes32 orderId) {
+        require(amountIn > 0, "Invalid amount");
+        require(gasNeeded > 0, "Invalid gas amount");
+
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+
+        orderId = keccak256(abi.encodePacked(
+            msg.sender,
+            tokenIn,
+            amountIn,
+            gasNeeded,
+            block.timestamp
+        ));
+
+        gasStationOrders[orderId] = GasStationOrder({
+            user: msg.sender,
+            tokenIn: tokenIn,
+            amountIn: amountIn,
+            gasNeeded: gasNeeded,
+            gasPrice: tx.gasprice,
+            swapData: swapData,
+            fulfilled: false
+        });
+
+        emit StrategyOrderCreated(
+            orderId,
+            msg.sender,
+            StrategyType.GAS_STATION,
+            tokenIn,
+            address(0), // ETH for gas
+            amountIn
+        );
+
+        return orderId;
+    }
+
+    
+
 }
