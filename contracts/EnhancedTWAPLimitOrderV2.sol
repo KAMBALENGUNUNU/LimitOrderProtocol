@@ -702,6 +702,109 @@ contract EnhancedTWAPLimitOrderV2 is ReentrancyGuard, Ownable, EIP712 {
     }
 
     
+    // =============================================================================
+    // 1INCH LOP EXTENSION FUNCTIONS (Amount Getters)
+    // =============================================================================
+
+    /**
+     * @dev Dynamic making amount calculation for TWAP orders
+     */
+    function getTWAPMakingAmount(bytes32 orderId) external view returns (uint256) {
+        StrategyOrder storage order = strategyOrders[orderId];
+        
+        if (block.timestamp < order.lastExecution + order.intervalDuration) {
+            return 0; // Not time for execution yet
+        }
+        
+        return Math.min(order.intervalAmount, order.remainingMakingAmount);
+    }
+
+    /**
+     * @dev Dynamic taking amount calculation for TWAP orders
+     */
+    function getTWAPTakingAmount(bytes32 orderId) external view returns (uint256) {
+        StrategyOrder storage order = strategyOrders[orderId];
+        uint256 makingAmount = this.getTWAPMakingAmount(orderId);
+        
+        if (makingAmount == 0) return 0;
+        
+        uint256 currentPrice = _getCurrentPrice(order.makerAsset, order.takerAsset);
+        uint256 takingAmount = (makingAmount * currentPrice) / PRECISION;
+        
+        // Apply slippage tolerance
+        return (takingAmount * (BASIS_POINTS - order.slippageTolerance)) / BASIS_POINTS;
+    }
+
+    // =============================================================================
+    // HELPER FUNCTIONS
+    // =============================================================================
+
+    function _execute1inchSwap(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        bytes memory swapData,
+        uint256 minAmountOut
+    ) internal returns (uint256 amountOut) {
+        if (tokenIn == address(0)) {
+            // Handle ETH input
+            require(msg.value >= amountIn, "Insufficient ETH");
+        } else {
+            // Use SafeERC20 for safe token approvals
+            IERC20(tokenIn).approve(ONEINCH_AGGREGATION_ROUTER, 0); // Reset approval
+            IERC20(tokenIn).approve(ONEINCH_AGGREGATION_ROUTER, amountIn);
+        }
+
+        uint256 balanceBefore;
+        if (tokenOut == address(0)) {
+            balanceBefore = address(this).balance;
+        } else {
+            balanceBefore = IERC20(tokenOut).balanceOf(address(this));
+        }
+
+        (bool success, ) = ONEINCH_AGGREGATION_ROUTER.call{
+            value: tokenIn == address(0) ? amountIn : 0
+        }(swapData);
+        require(success, "1inch swap failed");
+
+        if (tokenOut == address(0)) {
+            amountOut = address(this).balance - balanceBefore;
+        } else {
+            amountOut = IERC20(tokenOut).balanceOf(address(this)) - balanceBefore;
+        }
+
+        require(amountOut >= minAmountOut, "Slippage too high");
+
+        if (tokenIn != address(0)) {
+            IERC20(tokenIn).approve(ONEINCH_AGGREGATION_ROUTER, 0); // Reset approval
+        }
+
+        return amountOut;
+    }
+
+    function _getCurrentPrice(address tokenA, address tokenB) internal view returns (uint256) {
+        // In production, this would integrate with actual price oracles
+        // For demo purposes, return a mock price
+        return PRECISION; // 1:1 price ratio
+    }
+
+    function _calculateVestedAmount(bytes32 orderId) internal view returns (uint256) {
+        StrategyOrder storage order = strategyOrders[orderId];
+        
+        if (block.timestamp < order.vestingStart + order.cliffPeriod) {
+            return 0; // Still in cliff period
+        }
+        
+        if (block.timestamp >= order.vestingStart + order.vestingDuration) {
+            return order.totalMakingAmount; // Fully vested
+        }
+        
+        uint256 timeVested = block.timestamp - order.vestingStart - order.cliffPeriod;
+        uint256 vestingTimeAfterCliff = order.vestingDuration - order.cliffPeriod;
+        
+        return (order.totalMakingAmount * timeVested) / vestingTimeAfterCliff;
+    }
+
 
 
 }
