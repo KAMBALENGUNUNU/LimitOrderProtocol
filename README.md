@@ -125,3 +125,46 @@ The contract supports multiple strategy types via the `StrategyType` enum:
 - **Environment**: Tests run on a forked Ethereum mainnet, using real mainnet token addresses (e.g., WETH, DAI) and impersonated whale accounts for realistic scenarios.
 
 ---
+
+## 🧪 Testing and Validation
+
+Our project includes a comprehensive test suite to ensure reliability and correctness. Key test cases include:
+
+1. **TWAP Orders**:
+   - Successful creation and execution of TWAP orders.
+   - Validation of interval restrictions and slippage protection.
+2. **Grid Trading**:
+   - Creation of grid orders with multiple price levels.
+   - Execution of specific grid levels based on price conditions.
+3. **Vesting Payouts**:
+   - Token vesting with cliff period enforcement.
+   - Accurate claim calculations based on vesting schedules.
+4. **Gas Station**:
+   - Creation and fulfillment of gasless transaction orders.
+   - Correct ETH transfers for gas costs.
+5. **Conditional Orders**:
+   - Trigger-based execution using mock oracle prices.
+   - Validation of time and dependency conditions.
+6. **Order Management**:
+   - Pausing, resuming, and canceling orders.
+   - Token refunds on cancellation.
+7. **1inch Integration**:
+   - Correct calculation of making and taking amounts for TWAP orders.
+
+The test suite leverages Hardhat's forked mainnet environment, ensuring compatibility with real-world Ethereum conditions. All tests pass successfully, demonstrating the robustness of our implementation.
+
+---
+## 📈 Hackathon Requirements
+
+### Compliance with 1inch Hackathon Rules
+- **Onchain Execution**: All strategies (TWAP, grid trading, vesting, gas station, conditional orders) are executed onchain, as demonstrated in the test suite and deployable on the forked mainnet.
+- **Custom Limit Orders**: Orders are managed internally within the contract and not posted to the official 1inch Limit Order API, per the requirements.
+
+### Why We Stand Out
+- **Innovation**: We’ve extended the 1inch LOP with advanced strategies like grid trading, vesting, and gasless transactions, which are not natively supported.
+- **Scalability**: The modular design allows for easy addition of new strategies (e.g., DCA, rebalancing) in the future.
+- **Security**: Rigorous testing, reentrancy protection, and safe token handling ensure a production-ready solution.
+- **User Experience**: Gas optimization, batch execution, and gasless transactions prioritize user efficiency.
+- **Analytics**: Detailed order tracking and performance metrics provide transparency and insights.
+
+---
