@@ -76,3 +76,38 @@ Our smart contract is deployed on a **forked Ethereum mainnet**, leveraging the 
   - Retrieve detailed order and grid trading status.
 
 ---
+
+## 🛠 Technical Details
+
+### Smart Contract Overview
+- **Language**: Solidity ^0.8.20
+- **Dependencies**:
+  - OpenZeppelin: `Ownable`, `SafeERC20`, `ReentrancyGuard`, `EIP712`
+  - 1inch Limit Order Protocol Interface
+- **Network**: Deployed on a forked Ethereum mainnet for testing and demo purposes.
+- **Key Contracts**:
+  - `EnhancedTWAPLimitOrderV2.sol`: Core contract implementing all strategies and 1inch LOP extensions.
+
+### Architecture Highlights
+- **Modular Design**: Separate structs for `StrategyOrder`, `GasStationOrder`, and `ConditionalParams` ensure extensibility.
+- **1inch Integration**: Leverages `ILimitOrderProtocol` for dynamic amount calculations and swap execution via the 1inch Aggregation Router.
+- **Security Features**:
+  - Reentrancy protection with `ReentrancyGuard`.
+  - Safe token handling with `SafeERC20`.
+  - EIP-712 for gasless approvals and order signing.
+  - Authorized executors for controlled order execution.
+- **Gas Optimization**:
+  - Batch execution for multiple orders.
+  - Optimized storage with mappings and arrays.
+  - Gas station functionality to reduce user costs.
+
+### Strategy Types
+The contract supports multiple strategy types via the `StrategyType` enum:
+1. `TWAP`
+2. `DCA` (placeholder for future implementation)
+3. `GRID_TRADING`
+4. `STOP_LOSS_TRAILING`
+5. `VESTING_PAYOUTS`
+6. `GAS_STATION`
+7. `REBALANCING` (placeholder for future implementation)
+8. `CONDITIONAL_ORDER`
