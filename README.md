@@ -23,3 +23,56 @@ The **Enhanced TWAP Limit Order Protocol V2** is a versatile, onchain orderbook 
 Our smart contract is deployed on a **forked Ethereum mainnet**, leveraging the 1inch Aggregation Router (`0x111111125421cA6dc452d289314280a0f8842A65`) and Limit Order Protocol (`0x119c71D3BbAC22029622cbaEc24854d3D32D2828`) for seamless integration.
 
 ---
+
+## 🚀 Key Features
+
+### 1. TWAP Orders
+- **Purpose**: Minimize market impact by executing trades in smaller chunks over time.
+- **Features**:
+  - Configurable intervals (1 minute to 365 days).
+  - Slippage protection and price limits.
+  - Integration with 1inch LOP for dynamic amount calculations.
+  - MEV protection and gas optimization.
+
+### 2. Grid Trading
+- **Purpose**: Enable automated trading within a price range, ideal for market-making or volatile markets.
+- **Features**:
+  - Multiple price levels (2–20 grids).
+  - Dynamic execution based on current market prices.
+  - Detailed tracking of executed grid levels.
+
+### 3. Vesting Payouts
+- **Purpose**: Support token vesting for projects, DAOs, or team allocations.
+- **Features**:
+  - Linear vesting with customizable cliff periods.
+  - Secure token claims with precise calculations.
+  - Transparent vesting status tracking.
+
+### 4. Gas Station
+- **Purpose**: Facilitate gasless transactions by swapping tokens for ETH to cover gas costs.
+- **Features**:
+  - Seamless integration with 1inch swaps.
+  - Automated gas cost calculations and ETH transfers.
+  - Protection against overpayment.
+
+### 5. Conditional Orders
+- **Purpose**: Execute trades based on external conditions (e.g., price triggers, time, or other orders).
+- **Features**:
+  - Oracle integration for price-based triggers.
+  - Support for Chainlink feeds and custom oracles.
+  - Dependency on other order completions.
+
+### 6. Trailing Stop-Loss
+- **Purpose**: Protect profits by automatically adjusting stop-loss levels as prices move.
+- **Features**:
+  - Configurable trailing percentage (up to 50%).
+  - Secure execution with 1inch swap integration.
+
+### 7. Advanced Analytics
+- **Purpose**: Provide transparency into order performance.
+- **Features**:
+  - Track execution history, average prices, and gas usage.
+  - Calculate realized PnL and execution efficiency.
+  - Retrieve detailed order and grid trading status.
+
+---
