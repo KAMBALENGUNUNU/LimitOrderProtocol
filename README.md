@@ -111,3 +111,17 @@ The contract supports multiple strategy types via the `StrategyType` enum:
 6. `GAS_STATION`
 7. `REBALANCING` (placeholder for future implementation)
 8. `CONDITIONAL_ORDER`
+
+### Testing
+- **Framework**: Hardhat with Mocha/Chai.
+- **Test Coverage**:
+  - TWAP order creation and execution.
+  - Grid trading level execution.
+  - Vesting token claims with cliff periods.
+  - Gas station order fulfillment.
+  - Conditional order triggers.
+  - Order management (pause, resume, cancel).
+  - 1inch LOP integration for dynamic amounts.
+- **Environment**: Tests run on a forked Ethereum mainnet, using real mainnet token addresses (e.g., WETH, DAI) and impersonated whale accounts for realistic scenarios.
+
+---
