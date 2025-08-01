@@ -21,15 +21,15 @@ module.exports = {
     "@openzeppelin": path.join(__dirname, "node_modules/@openzeppelin")
   },
   networks: {
-   sepolia: {
-   url: process.env.SEPOLIA_RPC_URL || "",
-   accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : []
+    hardhat: {
+      forking: {
+        url: process.env.INFURA_MAINNET_RPC_URL,
+        blockNumber: 19000000, // Optional: pin to a block
+      },
     },
-
-    forking: {
-    url: process.env.INFURA_MAINNET_RPC_URL, 
-    blockNumber: 19000000, 
+    sepolia: {
+      url: process.env.SEPOLIA_RPC_URL || "",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
-  }
-  
+  },
 };
