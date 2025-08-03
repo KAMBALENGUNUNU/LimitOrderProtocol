@@ -74,3 +74,24 @@ async function main() {
     const allowance = await wethContract.allowance(user.address, contractAddress);
     console.log("Allowance amount:", ethers.formatEther(allowance));
     
+    
+    // 11. Create TWAP order
+    console.log("Creating TWAP order...");
+    const tx = await contract.createTWAPOrder(
+      WETH,
+      DAI,
+      ethers.parseEther("10"),
+      ethers.parseEther("2"),
+      300, // 5 minutes in seconds
+      ethers.parseEther("1800"), // price limit
+      Math.floor(Date.now()/1000) + 86400, // 1 day from now
+      500, // 5% slippage
+      "0x", // predicateData
+      "0x", // preInteractionData
+      "0x", // postInteractionData
+      { gasLimit: 1500000 } // Increased gas limit
+    );
+    
+    console.log("Transaction hash:", tx.hash);
+    const receipt = await tx.wait();
+    console.log("Transaction mined in block:", receipt.blockNumber);
