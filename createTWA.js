@@ -38,3 +38,21 @@ async function main() {
       "function deposit() payable",
       "function withdraw(uint256 wad)"
     ];
+
+     const wethContract = new ethers.Contract(WETH, wethAbi, user);
+    
+    // 7. Check WETH balance
+    const wethBalance = await wethContract.balanceOf(user.address);
+    console.log("Initial WETH balance:", ethers.formatEther(wethBalance));
+    
+    if (wethBalance < ethers.parseEther("10")) {
+      console.log("Insufficient WETH balance - depositing ETH to get WETH...");
+      
+      // Deposit ETH to get WETH
+      const depositTx = await wethContract.deposit({
+        value: ethers.parseEther("10")
+      });
+      await depositTx.wait();
+      console.log("Deposited 10 ETH for WETH");
+    }
+    
