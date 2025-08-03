@@ -43,4 +43,11 @@ async function main() {
       500, // 5% slippage
       "0x", // predicate
       "0x", // pre-interaction
-      
+        "0x", // post-interaction
+      { gasLimit: 2000000 } // Increased gas limit
+    );
+    
+    // 6. Get the receipt and decode events
+    const receipt = await tx.wait();
+    console.log("Transaction completed in block:", receipt.blockNumber);
+    
