@@ -10,3 +10,17 @@ async function main() {
       "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf"  // Chainlink registry
     );
     await twap.waitForDeployment();
+
+        // 2. Get test accounts
+    const [user, deployer] = await ethers.getSigners();
+    const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+    const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+    
+    // 3. Get WETH through deposit (better than impersonation)
+    console.log("Getting WETH through deposit...");
+    const weth = await ethers.getContractAt("IWETH", WETH);
+    
+    // Deposit ETH to get WETH
+    await weth.connect(user).deposit({
+      value: ethers.parseEther("10")
+    });
