@@ -112,3 +112,33 @@ async function main() {
     if (error.receipt) {
       console.log("Transaction receipt:", error.receipt);
     }
+
+    
+    
+    if (error.transaction) {
+      console.log("Transaction data:", error.transaction);
+      
+      try {
+        const iface = new ethers.Interface(contractArtifact.abi);
+        const decoded = iface.parseTransaction({ data: error.transaction.data });
+        console.log("Decoded transaction:", decoded);
+      } catch (e) {
+        console.log("Could not decode transaction:", e);
+      }
+    }
+    
+    // If available, get the revert reason
+    if (error.transactionHash) {
+      try {
+        const tx = await ethers.provider.getTransaction(error.transactionHash);
+        const code = await ethers.provider.call(tx, tx.blockNumber);
+        const reason = ethers.utils.toUtf8String("0x" + code.substr(138));
+        console.log("Revert reason:", reason);
+      } catch (e) {
+        console.log("Could not extract revert reason:", e);
+      }
+    }
+  }
+}
+
+main();
