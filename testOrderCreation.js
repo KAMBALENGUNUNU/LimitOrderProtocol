@@ -78,4 +78,20 @@ async function main() {
         totalMakingAmount: ethers.formatEther(orderDetails.totalMakingAmount),
         status: orderDetails.status
       });
-      
+
+       // Check user orders array
+      const userOrders = await twap.userOrders(user.address);
+      console.log("\nUser orders count:", userOrders.length);
+      console.log("Latest order ID matches:", userOrders[userOrders.length - 1] === event.args.orderId);
+    } else {
+      console.log("\nNo StrategyOrderCreated event found");
+      console.log("All emitted events:", receipt.logs.map(log => {
+        try {
+          return twap.interface.parseLog(log);
+        } catch (e) {
+          return "Unparsable log";
+        }
+      }));
+    }
+  } catch (error) {
+    console.error("\nError:", error);
