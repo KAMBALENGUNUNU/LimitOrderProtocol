@@ -109,3 +109,16 @@ async function main() {
         console.log("Could not extract revert reason:", e);
       }
     }
+    
+  }
+}
+
+// Add IWETH interface
+const IWETH = [
+  "function deposit() payable",
+  "function withdraw(uint wad)",
+  "function balanceOf(address) view returns (uint)",
+  "function approve(address spender, uint256 amount) external returns (bool)"
+];
+
+main();
