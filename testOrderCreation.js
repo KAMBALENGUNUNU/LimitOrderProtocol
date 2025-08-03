@@ -62,3 +62,20 @@ async function main() {
       })
       .find(event => event && event.name === "StrategyOrderCreated");
       
+    if (event) {
+      console.log("\nOrder created successfully!");
+      console.log("Order ID:", event.args.orderId);
+      console.log("Maker:", event.args.maker);
+      console.log("Strategy Type:", event.args.strategyType);
+      console.log("Amount:", ethers.formatEther(event.args.totalAmount));
+      
+      // Verify order exists in contract storage
+      const orderDetails = await twap.strategyOrders(event.args.orderId);
+      console.log("\nOrder details from contract:", {
+        maker: orderDetails.maker,
+        makerAsset: orderDetails.makerAsset,
+        takerAsset: orderDetails.takerAsset,
+        totalMakingAmount: ethers.formatEther(orderDetails.totalMakingAmount),
+        status: orderDetails.status
+      });
+      
