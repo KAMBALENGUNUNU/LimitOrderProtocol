@@ -56,3 +56,21 @@ async function main() {
       console.log("Deposited 10 ETH for WETH");
     }
     
+     
+    // 8. Verify new WETH balance
+    const newWethBalance = await wethContract.balanceOf(user.address);
+    console.log("New WETH balance:", ethers.formatEther(newWethBalance));
+    
+    // 9. Approve contract to spend WETH
+    console.log("Approving WETH spend...");
+    const approveTx = await wethContract.approve(
+      contractAddress,
+      ethers.parseEther("10")
+    );
+    await approveTx.wait();
+    console.log("Approval confirmed");
+    
+    // 10. Verify allowance (now with correct ABI)
+    const allowance = await wethContract.allowance(user.address, contractAddress);
+    console.log("Allowance amount:", ethers.formatEther(allowance));
+    
