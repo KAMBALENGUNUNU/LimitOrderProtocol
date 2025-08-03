@@ -95,3 +95,17 @@ async function main() {
     }
   } catch (error) {
     console.error("\nError:", error);
+    
+    // Enhanced error debugging
+    if (error.receipt) {
+      console.log("Transaction receipt:", error.receipt);
+    }
+    if (error.transactionHash) {
+      try {
+        const tx = await ethers.provider.getTransaction(error.transactionHash);
+        const code = await ethers.provider.call(tx, tx.blockNumber);
+        console.log("Revert reason:", ethers.utils.toUtf8String("0x" + code.substr(138)));
+      } catch (e) {
+        console.log("Could not extract revert reason:", e);
+      }
+    }
