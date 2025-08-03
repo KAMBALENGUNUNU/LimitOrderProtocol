@@ -51,3 +51,14 @@ async function main() {
     const receipt = await tx.wait();
     console.log("Transaction completed in block:", receipt.blockNumber);
     
+    // 7. Find the StrategyOrderCreated event
+    const event = receipt.logs
+      .map(log => {
+        try {
+          return twap.interface.parseLog(log);
+        } catch (e) {
+          return null;
+        }
+      })
+      .find(event => event && event.name === "StrategyOrderCreated");
+      
