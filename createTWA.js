@@ -95,3 +95,20 @@ async function main() {
     console.log("Transaction hash:", tx.hash);
     const receipt = await tx.wait();
     console.log("Transaction mined in block:", receipt.blockNumber);
+
+     
+    // 12. Check for order creation event
+    const event = receipt.events?.find(x => x.event === "StrategyOrderCreated");
+    if (event) {
+      console.log(`TWAP Order created with ID: ${event.args.orderId}`);
+    } else {
+      console.log("Order creation failed - no event found");
+      console.log("Full receipt:", receipt);
+    }
+  } catch (error) {
+    console.error("Error details:", error);
+    
+    // Enhanced error logging
+    if (error.receipt) {
+      console.log("Transaction receipt:", error.receipt);
+    }
