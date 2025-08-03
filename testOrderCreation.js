@@ -24,3 +24,23 @@ async function main() {
     await weth.connect(user).deposit({
       value: ethers.parseEther("10")
     });
+
+    console.log("WETH balance:", ethers.formatEther(await weth.balanceOf(user.address)));
+    
+    // 4. Approve and create order
+    await weth.connect(user).approve(twap.getAddress(), ethers.parseEther("10"));
+    
+    // 5. Create TWAP order
+    console.log("Creating TWAP order...");
+    const tx = await twap.connect(user).createTWAPOrder(
+      WETH,
+      DAI,
+      ethers.parseEther("10"),
+      ethers.parseEther("2"),
+      300, // 5 minutes
+      ethers.parseEther("1800"), // price limit
+      Math.floor(Date.now()/1000) + 86400, // 1 day from now
+      500, // 5% slippage
+      "0x", // predicate
+      "0x", // pre-interaction
+      
